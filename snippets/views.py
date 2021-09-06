@@ -9,7 +9,23 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework import generics
+from .permissions import IsOwnerOrRead
 
+permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrRead]
+
+class SnippetList(generics.ListCreateAPIView):
+    permission_classes=permission_classes
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes=permission_classes
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+"""
 class SnippetList(APIView, format=None):
     
     def get(self, *args, **kwargs):
@@ -48,7 +64,7 @@ class SnippetDetails(APIView, format=None):
         snippet=self.get_object(pk)
         snippet.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+"""
 """
 @api_view(["GET", "POST"])
 def snippet_list(request, format="json"):
@@ -74,7 +90,6 @@ def snippet_details(request, snippet_id, format="api"):
         ser_snip=SnippetSerializer(the_snippet)
         return Response(ser_snip.data)
 
-    """UPDATE"""
     if request.method=="PUT":
         ser_snip = SnippetSerializer(the_snippet, data=request.data)
         if ser_snip.is_valid():
