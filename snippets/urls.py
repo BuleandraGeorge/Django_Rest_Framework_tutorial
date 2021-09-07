@@ -10,7 +10,6 @@ router.register(r'users', views.UserViewSet)
 
 urlpatterns = [
     path('', include(router.urls))
-    
+] 
 
-]
 format_suffix_patterns(urlpatterns)
