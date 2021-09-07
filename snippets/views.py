@@ -1,44 +1,29 @@
+from django.contrib.auth.models import User
+
 from snippets.models import Snippet
-from snippets.serializers import SnippetSerializer
+from snippets.serializers import SnippetSerializer, UserSerializer
 
 #rest framework
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework import status, generics, permissions, viewsets, renderers
 
-@api_view(["GET", "POST"])
-def snippet_list(request, format="json"):
-    if request.method=="GET":
-        serializedSnippets = SnippetSerializer(Snippet.objects.all(), many=True)
-        return Response(serializedSnippets.data)
-    
-    elif request.method=="POST":
-        serializedSnippet = SnippetSerializer(data=request.data)
-        if serializedSnippet.is_valid():
-            serializedSnippet.save()
-            return Response(serializedSnippet.data, status=status.HTTP_201_CREATED)
-    return Response(serializedSnippet.errors, status=status.HTTP_404_NOT_FOUND)
+permissions_classes=[permissions.IsAuthenticatedOrReadOnly]
 
-@api_view(["GET", "PUT", "DELETE"])
-def snippet_details(request, snippet_id, format="api"):
-    try:
-        the_snippet=Snippet.objects.get(pk=snippet_id)
-    except Snippet.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+class SnippetViewSet(viewsets.ModelViewSet):
+    queryset=Snippet.objects.all()
+    serializer_class=SnippetSerializer
+    permissions_classes
 
-    if request.method=="GET":
-        ser_snip=SnippetSerializer(the_snippet)
-        return Response(ser_snip.data)
+    @action(detail=True, renderer_classes=[renderers.StaticHTMLRenderer])
+    def highlight(self, request, *args, **kwargs):
+        snippet = self.get_object()
+        return Response(snippet.highlighted)
 
-    """UPDATE"""
-    if request.method=="PUT":
-        ser_snip = SnippetSerializer(the_snippet, data=request.data)
-        if ser_snip.is_valid():
-            ser_snip.save()
-            return Response(ser_snip.data, status=status.HTTP_201_CREATED)
-        return Response(ser_snip.errors, status=status.HTTP_404_NOT_FOUND)
-    
-    if request.method=="DELETE":
-        the_snippet.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset=User.objects.all()
+    serializer_class=UserSerializer
